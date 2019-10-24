@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GPS定位测试</title>
+    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'>
+</head>
+<body>
+<b id="demo" style="font-size: 18px;"></b>
+<script>
+    var x=document.getElementById("demo");
+    getLocation();
+    function getLocation()
+    {
+        if (navigator.geolocation)
+        {
+            navigator.geolocation.watchPosition(showPosition,showError,{
+                enableHighAccuracy: true, //是否获取高精度经纬度，默认值为false
+                timeout: 5000, //获取位置信息的超时时间。单位为毫秒（ms），默认值为不超时
+                maximumAge: 0, //获取位置信息的缓存时间。单位为毫秒（ms），默认值为0（立即更新获取）。如果设备缓存的位置信息超过指定的缓存时间，将重新更新位置信息后再返回。
+                provider: "system",//(String 类型 )优先使用的定位模块。可取以下供应者： "system"：表示系统定位模块，支持wgs84坐标系； "baidu"：表示百度定位模块，支持gcj02/bd09/bd09ll坐标系
+                coordsType:"wgs84",
+                geocode:true
+            });
+        }
+        else
+        {
+            x.innerHTML="该浏览器不支持获取地理位置。";
+        }
+    }
+    function showPosition(position)
+    {
+        x.innerHTML="纬度: " + position.coords.latitude +
+            "<br>经度: " + position.coords.longitude;
+    }
+
+    function showError(error) {
+
+        switch (error.code) {
+
+            case error.PERMISSION_DENIED:
+
+                x.innerHTML="定位失败,用户拒绝请求地理定位";
+
+                break;
+
+            case error.POSITION_UNAVAILABLE:
+
+                x.innerHTML="定位失败,位置信息是不可用";
+
+                break;
+
+            case error.TIMEOUT:
+
+                x.innerHTML="定位失败,请求获取用户位置超时";
+
+                break;
+
+            case error.UNKNOWN_ERROR:
+
+                x.innerHTML="定位失败,定位系统失效";
+
+                break;
+
+        }
+
+    }
+</script>
+</body>
+</html>
