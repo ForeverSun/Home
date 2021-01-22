@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Forever.Sun首页</title>
+<style type="text/css">
+html,body,.container{margin:0;padding:0;width:100%;height:100%;background:#0870c5; overflow:hidden;font: 18px/22px Gotham Book, Arial, Georgia, Microsoft YaHei;}
+.linkBox{position:absolute;top:0;left:50%;margin-left:-500px;width:1000px;background:none;}
+.footer{position:fixed;bottom:0;width: 100%;height: 50px;background-color: #0062ac;border-bottom: 4px solid #f8b62c;text-align: center;color: #a3b8d1;line-height: 50px;font-size: 14px;position: fixed;left: 0;bottom: 0;z-index: 2;}
+h3{color:#fff;font-weight:bold;text-align:center;}
+.sunLogo{margin:4% auto 0 auto;display:block;}
+.linkCon{padding-top:40px;}
+.linkCon a{width: 20%;float: left;display: block;height: 30px;line-height: 30px;padding: 5px 0;text-indent: 10px;text-decoration:none;background: url(images/gt3.png) left center no-repeat;color: #fff;font-size: 18px;}
+.linkCon a:hover{ text-decoration:underline;}
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+  display: block;
+}
+body {
+  line-height: 1;
+}
+ol, ul {
+  list-style: none;
+}
+blockquote, q {
+  quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+  content: '';
+  content: none;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* particleground demo */
+
+* { 
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: #0870c5;
+  font-family: 'Montserrat', sans-serif;
+  color: #fff;
+  line-height: 1.3;
+  -webkit-font-smoothing: antialiased;
+}
+
+#particles {
+  width: 100%;
+ /* height: 100%;*/
+  overflow: hidden;
+}
+
+.intro {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  padding: 0 20px;
+  width: 100%;
+  text-align: center;
+}
+h1 {
+  text-transform: uppercase;
+  font-size: 85px;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+}
+h1::after {
+  content: '';
+  width: 80px;
+  display: block;
+  background: #fff;
+  height: 10px;
+  margin: 30px auto;
+  line-height: 1.1;
+}
+p {
+  margin: 0 0 30px 0;
+  font-size: 24px;
+}
+
+@media only screen and (max-width: 1000px) {
+  h1 {
+    font-size: 70px;
+  }
+}
+
+@media only screen and (max-width: 800px) {
+  h1 {
+    font-size: 48px;
+  }
+  h1::after {
+    height: 8px;
+  }
+}
+
+@media only screen and (max-width: 568px) {
+  .intro {
+    padding: 0 10px;
+  }
+  h1 {
+    font-size: 30px;
+  }
+  h1::after {
+    height: 6px;
+  }
+  p {
+    font-size: 18px;
+  }
+  .btn {
+    font-size: 16px;
+  }
+}
+
+@media only screen and (max-width: 320px) {
+  h1 {
+    font-size: 28px;
+  }
+  h1::after {
+    height: 4px;
+  }
+}
+</style>
+<script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="js/particleground.min.js.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+  $('#particles').particleground({
+    dotColor: '#178ceb',
+    lineColor: '#178ceb'
+  });
+  $('.intro').css({
+    'margin-top': -($('.intro').height() / 2)
+  });
+});
+</script>
+</head>
+
+<body>
+<div class="container" id="particles">
+
+
+<img src="images/global_bg.jpg" width="100%"/>
+<div class="linkBox"><img src="images/wlLogo.png" class="sunLogo" alt="Forever.Sun" >
+<h3>choose the content</h3>
+<div class="linkCon">
+<a href="javascript:;" target="_blank" onClick="alert('he is very lazy！')">个人简历</a>
+<a href="index.html" target="_blank">BootsrapSite</a>
+<a href="work/loadpage/loadpage.html" target="_blank">客户端宣传1</a>
+<a href="work/OfficialMobile/OfficialMobile.html" target="_blank">客户端宣传2</a>
+<a href="work/Erp/Login/index.html" target="_blank">Erp系统</a>
+<a href="work/portal/zzlWeb/index.html" target="_blank">门户Site1</a>
+<a href="work/portal/kalegou/index.html" target="_blank">门户Site2</a>
+<a href="work/canvas/clock.html" target="_blank">Canvas时钟</a>
+<a href="work/canvas/countdown.html" target="_blank">Canvas倒计时</a>
+<a href="work/canvas/puzzle.html" target="_blank">Canvas七巧板</a>
+<a href="plugin/AllScroll.html" target="_blank">全屏滚动</a>
+
+</div>
+</div>
+</div>
+<div class="footer">©苏ICP备15008496号 2015 Forever.Sun<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1255264117'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s4.cnzz.com/z_stat.php%3Fid%3D1255264117%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script></div>
+</body>
+</html>
