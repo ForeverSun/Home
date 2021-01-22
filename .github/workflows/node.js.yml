@@ -10,12 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v2 # If you're using actions/checkout@v2 you must set persist-credentials to false in most cases for the deployment to work correctly.
-        with:
-          persist-credentials: false
+        uses: actions/checkout@master
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@releases/v3
-        with:
+        env:
           GITHUB_TOKEN: ${{ secrets.DEPLOY }}
+          ACCESS_TOKEN: ${{ secrets.DEPLOY }}
+          BASE_BRANCH: master # The branch the action should deploy from.
+          # 指定部署的分支，默认是 gh-pages 分支
           BRANCH: gh-pages # The branch the action should deploy to.
           FOLDER: / # The folder the action should deploy.
