@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>dome_花都</title>
+    <script src="http://api.tianditu.gov.cn/api?v=4.0&tk=847f2c771a9815f486d805f274209561"
+        type="text/javascript"></script>
+</head>
+
+<body>
+    <div style="width: 100%;height: 100vh">
+        <div class="head">
+            <div>
+                <div>
+                    <input type="text" id="keyWord" placeholder="关键字搜索" />
+                    <input type="button"
+                        onClick="localsearch.searchNearby(document.getElementById('keyWord').value,center,radius)"
+                        value="搜索" />
+                </div>
+                <div>
+                    <input id="coordinateSearch_value" placeholder="坐标格式：120,30"></input>
+                    <button onclick="coordinateSearch()">搜索</button>
+                </div>
+                <div>
+                    <input id="coordinate_value" placeholder="坐标获取结果"></input>
+                    <button onclick="copyObj(document.getElementById('coordinate_value').value)">复制</button>
+                </div>
+
+                <div>
+                    <input id="coordinate_values" placeholder="坐标格式,120,30 121,31"></input>
+                    <button
+                        onclick="renderPointAndLocationView(document.getElementById('coordinate_values').value)">查看点的分布情况</button>
+                </div>
+            </div>
+            <!-- 搜索结果面板 -->
+            <div id="resultDiv" class="result">
+                <div id="searchDiv"></div>
+                <div id="pageDiv">
+                    <input type="button" value="首页" onClick="localsearch.firstPage()" />
+                    <input type="button" value="上一页" onClick="localsearch.previousPage()" />
+                    <input type="button" value="下一页" onClick="localsearch.nextPage()" />
+                    <input type="button" value="尾页" onClick="localsearch.lastPage()" />
+                    <br />
+                    第<input type="text" value="1" id="pageId" size="3" />页
+                    <input type="button"
+                        onClick="localsearch.gotoPage(parseInt(document.getElementById('pageId').value));" value="跳转" />
+                </div>
+            </div>
+        </div>
+        <div id="map"></div>
+    </div>
+</body>
+<script type="text/javascript">
+    var map = {}
+    var infoWin
+    var center
+    var radius = 12000
+    var geocoder = {}
+    var localsearch
+
+    var state = {
+        // 1:click—map 2:select-map
+        input_state: 1,
+        list_state: 1
+    }
+
+    window.onload = function load() {
+        document.getElementById("searchDiv").innerHTML = ""
+        document.getElementById("resultDiv").style.display = "none"
+        const init = new Promise((resolve, reject) => {
+            if (T) {
+                console.log('地图初始化成功')
+                resolve(T)
+                reject('error')
+            }
+        })
+        init.then(T => {
+            center = new T.LngLat(113.226748, 23.409623)
+            map = new T.Map('map')
+            map.centerAndZoom(center, 15)
+
+            var config = {
+                pageCapacity: 10,	//每页显示的数量
+                onSearchComplete: localSearchResult	//接收数据的回调函数
+            }
+            localsearch = new T.LocalSearch(map, config)
+
+            // Click Map events
+            geocoder = new T.Geocoder()
+            map.addEventListener("click", function (e) {
+                clearAll()
+                state.input_state = 1
+                state.list_state = 2
+                geocoder.getLocation(e.lnglat, pointLocation)
+                const coordinate_txt = e.lnglat.lng.toFixed(6) + ',' + e.lnglat.lat.toFixed(6)
+                document.getElementById("coordinate_value").value = coordinate_txt
+            })
+
+
+        })
+
+    }
+
+    // Poi events
+    function pointLocation(result) {
+        if (result.getStatus() == 0) {
+            if (state.input_state != 1) {
+                debugger
+                map.panTo(result.getLocationPoint(), 16)
+            }
+            var marker = new window.T.Marker(result.getLocationPoint())
+            if (state.list_state != 1) {
+                map.addOverLay(marker)
+            }
+        } else {
+            alert(result.getMsg())
+        }
+    }
+
+    // Coordinate events
+    function coordinateSearch() {
+        state.input_state = 2
+        state.list_state = 2
+        clearAll()
+
+        const coordinate_txt = document.getElementById('coordinateSearch_value').value
+        let coordinate_lnglat = coordinate_txt.split(',')
+        geocoder.getLocation(
+            window.T.LngLat(
+                Number(coordinate_lnglat[0]),
+                Number(coordinate_lnglat[1])
+            ),
+            pointLocation
+        )
+
+    }
+
+    // Copy events
+    function copyObj(e, message) {
+        if (e != '') {
+            var aux = document.createElement("input")
+            aux.setAttribute("value", e)
+            document.body.appendChild(aux)
+            aux.select()
+            document.execCommand("copy")
+            document.body.removeChild(aux)
+            if (message == null) {
+                alert("复制成功")
+            } else {
+                alert(message)
+            }
+        } else {
+            alert('内容为空')
+        }
+
+    }
+
+    function localSearchResult(result) {
+        //清空地图及搜索列表
+        clearAll()
+
+        //创建圆
+        // createCircle();
+
+        //解析点数据结果
+        pois(result.getPois())
+    }
+    //解析点数据结果
+    function pois(obj) {
+        if (obj) {
+            //显示搜索列表
+            var divMarker = document.createElement("div")
+            //坐标数组，设置最佳比例尺时会用到
+            var zoomArr = []
+            for (var i = 0; i < obj.length; i++) {
+                //闭包
+                (function (i) {
+                    var name = obj[i].name
+                    var address = obj[i].address
+                    var lnglatArr = obj[i].lonlat.split(" ")
+                    var lnglat = new T.LngLat(lnglatArr[0], lnglatArr[1])
+
+                    var winHtml = "地址:" + address
+
+                    var marker = new T.Marker(lnglat)
+                    map.addOverLay(marker)
+                    marker.addEventListener("click", function () {
+                        this.showPosition(marker, name, winHtml)
+
+                    }, this)
+                    zoomArr.push(lnglat)
+
+                    var a = document.createElement("a")
+                    a.href = "javascript://"
+                    a.innerHTML = name
+                    a.onclick = function () {
+                        showPosition(marker, name, winHtml)
+                    }
+                    divMarker.appendChild(document.createTextNode((i + 1) + "."))
+                    divMarker.appendChild(a)
+                    divMarker.appendChild(document.createElement("br"))
+                })(i)
+            }
+            //map.setViewport(zoomArr);
+            divMarker.appendChild(document.createTextNode('共' + localsearch.getCountNumber() + '条记录，分' + localsearch.getCountPage() + '页,当前第' + localsearch.getPageIndex() + '页'))
+            document.getElementById("searchDiv").appendChild(divMarker)
+            document.getElementById("resultDiv").style.display = "block"
+        } else {
+            alert('null')
+        }
+    }
+    // 清空处理
+    function clearAll() {
+        map.clearOverLays()
+        document.getElementById("searchDiv").innerHTML = ""
+        document.getElementById("resultDiv").style.display = "none"
+    }
+    //显示信息框
+    function showPosition(marker, name, winHtml) {
+        if (infoWin) {
+            map.removeOverLay(infoWin)
+            infoWin = null
+        }
+        var html = "<h3>" + name + "</h3>"
+        html += winHtml
+        state.list_state = 2
+        map.panTo(marker.or, 16)
+
+        infoWin = new T.InfoWindow(html, new T.Point([0, 0]))
+        marker.openInfoWindow(infoWin)
+    }
+
+    // 渲染多个点在球上并定位
+
+    function renderPointAndLocationView(sCoordinates) {
+        clearAll()
+        var viewLngLats = []
+        var sPoint = sCoordinates.split(' ')
+
+        for (var i = 0; i < sPoint.length; i++) {
+            if (sPoint[i]) {
+                var aLngLat = sPoint[i].split(',')
+                if (aLngLat[0] && aLngLat[1]) {
+                    var oLngLat = new T.LngLat(aLngLat[0], aLngLat[1])
+                    var marker = new T.Marker(oLngLat)  // 创建标注
+                    map.addOverLay(marker)
+                    viewLngLats.push(oLngLat)
+                }
+            }
+
+        }
+        if (viewLngLats.length) {
+            map.setViewport(viewLngLats)
+        }
+    }
+
+</script>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    #map {
+        width: 100%;
+        height: 100%;
+    }
+
+    .head {
+        position: absolute;
+        z-index: 999;
+    }
+
+    #resultDiv {
+        display: block;
+        background: white;
+        padding: 5px;
+        max-width: 215px;
+    }
+
+    #pageDiv {
+        text-align: center;
+    }
+
+    #searchDiv {
+        font-size: 12px;
+        color: #333333;
+    }
+
+    #searchDiv a {
+        font-size: 14px;
+        opacity: 1;
+    }
+</style>
+
+</html>
