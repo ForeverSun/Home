@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>dome_花都</title>
-    <script src="//api.tianditu.gov.cn/api?v=4.0&tk=847f2c771a9815f486d805f274209561"
+    <script src="http://api.tianditu.gov.cn/api?v=4.0&tk=847f2c771a9815f486d805f274209561"
         type="text/javascript"></script>
 </head>
 
@@ -76,7 +76,11 @@
                 reject('error')
             }
         })
-        init.then(T => {
+        navigator.geolocation.getCurrentPosition((position) => {
+    let lat = position.coords.latitude;
+    let lng = position.coords.longitude;
+    alert(lng+','+lat)
+     init.then(T => {
             center = new T.LngLat(113.226748, 23.409623)
             map = new T.Map('map')
             map.centerAndZoom(center, 15)
@@ -100,6 +104,25 @@
 
 
         })
+},function (error)
+{
+    switch(error.code) 
+    {
+        case error.PERMISSION_DENIED:
+           alert("用户拒绝对获取地理位置的请求。")
+            break;
+        case error.POSITION_UNAVAILABLE:
+            alert("位置信息是不可用的。")
+            break;
+        case error.TIMEOUT:
+            alert("请求用户地理位置超时。")
+            break;
+        case error.UNKNOWN_ERROR:
+            alert("未知错误。")
+            break;
+    }
+});
+       
 
     }
 
