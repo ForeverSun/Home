@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link rel="stylesheet" href="http://api.wish3d.com/sdk/bucket.css">
+  <script src="http://online.wish3d.com/Wish3DEarth/LSGlobe/Build/LSGlobe/LSGlobe.js"></script>
+  <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+</head>
+
+<body>
+  <div id="lsGlobe"></div>
+  <script>
+    //许可地址
+    var ClicenseUrl='https://10.16.30.11//wish3dearth/api/access/v1.0.0'
+    //许可码
+    var Cguid='891064099'
+
+    var viewer=new LSGlobe.Viewer('lsGlobe',{
+      orderIndependentTranslucency: false,
+      contextOptions: {
+        webgl: {
+          alpha: true,
+        },
+      },
+      licenseUrl: ClicenseUrl,
+      guid: Cguid,
+    })
+    $.ajax({
+      type: "get",
+      url: "https://10.16.30.11/wish3dearth/api/systemInfo/v1.0.0/info",
+      async: true,
+      //ajax配置请求头方式，第一种
+      headers: {
+        "Access-Token": "Access-Token123456",//自定义请求头
+        "Content-Type": "application/json;charset=utf8",
+        "ssss-header": '99999999999'
+      },
+      //ajax配置请求头方式，第二种
+      //beforeSend : function(request) {
+      //   request.setRequestHeader("Access-Token", "Access-Token123456");
+      //   request.setRequestHeader("Content-Type", "application/json;charset=utf8");
+      //}
+      data: {},
+      success: function(data) {
+        console.log(data)
+      }
+    });
+  </script>
+</body>
+
+</html>
