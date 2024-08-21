@@ -1,70 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>GPS定位测试</title>
     <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'>
+    <!-- Include the CesiumJS JavaScript and CSS files -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html,
+        body,
+        #cesiumContainer {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #demo {
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            font-weight: bold;
+            border-radius: 5px;
+            width: 100%;
+            position: absolute;
+            left: 0;
+            top: 40px;
+            color: #fff;
+            z-index: 55;
+        }
+    </style>
 </head>
+
 <body>
-<b id="demo" style="font-size: 18px;"></b>
-<script>
-    var x=document.getElementById("demo");
-    getLocation();
-    function getLocation()
-    {
-        if (navigator.geolocation)
-        {
-            navigator.geolocation.watchPosition(showPosition,showError,{
-                enableHighAccuracy: true, //是否获取高精度经纬度，默认值为false
-                //timeout: 10000, //获取位置信息的超时时间。单位为毫秒（ms），默认值为不超时
-                maximumAge: 0, //获取位置信息的缓存时间。单位为毫秒（ms），默认值为0（立即更新获取）。如果设备缓存的位置信息超过指定的缓存时间，将重新更新位置信息后再返回。
-                provider: "system",//(String 类型 )优先使用的定位模块。可取以下供应者： "system"：表示系统定位模块，支持wgs84坐标系； "baidu"：表示百度定位模块，支持gcj02/bd09/bd09ll坐标系
-                coordsType:"wgs84",
-                geocode:true
-            });
-        }
-        else
-        {
-            x.innerHTML="该浏览器不支持获取地理位置。";
-        }
-    }
-    function showPosition(position)
-    {
-        x.innerHTML="纬度: " + position.coords.latitude +
-            "<br>经度: " + position.coords.longitude;
-    }
+    <div id="demo"></div>
+    <div id="cesiumContainer"></div>
+    <script type="module">
+        // Your access token can be found at: https://ion.cesium.com/tokens.
+        // Replace `your_access_token` with your Cesium ion access token.
 
-    function showError(error) {
+        Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkNzJkMDlhMC0wMDRiLTRlMjQtOTkzMy03N2ZhNGJkNTlhZjMiLCJpZCI6MzEyNSwic2NvcGVzIjpbImFzbCIsImFzciIsImFzdyIsImdjIl0sImlhdCI6MTU4NTEwMjg1Mn0.BG4_9fiIL0xVU0Eq30JOLfc116B6tGfzsCASK46MdRo'
 
-        switch (error.code) {
+        // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            terrain: Cesium.Terrain.fromWorldTerrain(),
+        })
 
-            case error.PERMISSION_DENIED:
 
-                x.innerHTML="定位失败,用户拒绝请求地理定位";
+        // Fly the camera to San Francisco at the given longitude, latitude, and height.
+        viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(120, 30, 300),
+            orientation: {
+                heading: Cesium.Math.toRadians(0.0),
+                pitch: Cesium.Math.toRadians(-90.0),
+            }
+        })
 
-                break;
-
-            case error.POSITION_UNAVAILABLE:
-
-                x.innerHTML="定位失败,位置信息是不可用";
-
-                break;
-
-            case error.TIMEOUT:
-
-                x.innerHTML="定位失败,请求获取用户位置超时";
-
-                break;
-
-            case error.UNKNOWN_ERROR:
-
-                x.innerHTML="定位失败,定位系统失效";
-
-                break;
-
+        // Add Cesium OSM Buildings, a global 3D buildings layer.
+        const buildingTileset = await Cesium.createOsmBuildingsAsync()
+        viewer.scene.primitives.add(buildingTileset)
+        var x = document.getElementById("demo")
+        getLocation()
+        function getLocation () {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(showPosition, showError, {
+                    enableHighAccuracy: true, //是否获取高精度经纬度，默认值为false
+                    //timeout: 10000, //获取位置信息的超时时间。单位为毫秒（ms），默认值为不超时
+                    maximumAge: 0, //获取位置信息的缓存时间。单位为毫秒（ms），默认值为0（立即更新获取）。如果设备缓存的位置信息超过指定的缓存时间，将重新更新位置信息后再返回。
+                    provider: "system",//(String 类型 )优先使用的定位模块。可取以下供应者： "system"：表示系统定位模块，支持wgs84坐标系； "baidu"：表示百度定位模块，支持gcj02/bd09/bd09ll坐标系
+                    coordsType: "wgs84",
+                    geocode: true
+                })
+            }
+            else {
+                x.innerHTML = "该浏览器不支持获取地理位置。"
+            }
         }
 
-    }
-</script>
+        var currentEntity, currentTime = new Date().getTime()
+
+        function showPosition (position) {
+            x.innerHTML = "纬度: " + position.coords.latitude +";经度: " + position.coords.longitude
+
+            if (currentEntity) {
+                if (new Date().getTime() - currentTime > 1500) {
+                    currentTime = new Date().getTime()
+                    currentEntity.position = Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords.latitude)
+                }
+            } else {
+                currentEntity = viewer.entities.add({
+                    //标注的坐标 x,y,z 经度纬度和高度的值
+                    position: Cesium.Cartesian3.fromDegrees(120.428318, 31.325119),
+                    label: {
+                        text: '我的位置',
+                        //标注文字描述
+                        font: "32px Microsoft YaHei",
+                        //标注文字大小、字体
+                        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                        outlineWidth: 6,
+                        translucencyByDistance: new Cesium.NearFarScalar(1.5e5, 1.0, 1.5e10, 0.0),
+                        //根据告诉改变透明度
+                        horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+                        pixelOffset: new Cesium.Cartesian2(15, 0),
+                        disableDepthTestDistance: 10000,
+                        //标注的遮挡距离设置为100则视角与标注的距离大于100米时会有遮挡
+                        scale: 0.5,
+                        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                    },
+                    billboard: {
+                        image: "whiteShapes.png",
+                        imageSubRegion: new Cesium.BoundingRectangle(49, 43, 18, 18),
+                        color: Cesium.Color.LIME,
+                        disableDepthTestDistance: 10000,
+                        scaleByDistance: new Cesium.NearFarScalar(1.5e1, 1, 1.5e7, 1),
+                        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                    },
+                    id: 'current-id',
+                    //标注唯一标识
+                    show: true //标绘点对象的true显示,false隐藏属性
+                })
+            }
+
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords.latitude, 300),
+                orientation: {
+                    heading: Cesium.Math.toRadians(0.0),
+                    pitch: Cesium.Math.toRadians(-90),
+                },
+                // maximumHeight:1000,
+                duration: 0.5
+            })
+        }
+
+        function showError (error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    x.innerHTML = "定位失败,用户拒绝请求地理定位"
+                    break
+                case error.POSITION_UNAVAILABLE:
+                    x.innerHTML = "定位失败,位置信息是不可用"
+                    break
+                case error.TIMEOUT:
+                    x.innerHTML = "定位失败,请求获取用户位置超时"
+                    break
+                case error.UNKNOWN_ERROR:
+                    x.innerHTML = "定位失败,定位系统失效"
+                    break
+            }
+        }
+    </script>
 </body>
+
 </html>
