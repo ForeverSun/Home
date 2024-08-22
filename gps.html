@@ -156,7 +156,12 @@
                 })
             } else {
                 // 获取当前位置
-                navigator.geolocation.getCurrentPosition(showPosition,showError,{maximumAge:60000, timeout:10000, enableHighAccuracy:true})
+                navigator.geolocation.getCurrentPosition(showPosition, showError, {
+                    maximumAge: 0, //获取位置信息的缓存时间。单位为毫秒（ms），默认值为0（立即更新获取）。如果设备缓存的位置信息超过指定的缓存时间，将重新更新位置信息后再返回。
+                    provider: "baidu",//(String 类型 )优先使用的定位模块。可取以下供应者： "system"：表示系统定位模块，支持wgs84坐标系； "baidu"：表示百度定位模块，支持gcj02/bd09/bd09ll坐标系
+                    coordsType: "wgs84",
+                    geocode: true, timeout: 10000, enableHighAccuracy: true
+                })
             }
         }
 
