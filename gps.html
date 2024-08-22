@@ -156,7 +156,7 @@
                 })
             } else {
                 // 获取当前位置
-                navigator.geolocation.getCurrentPosition(showPosition)
+                navigator.geolocation.getCurrentPosition(showPosition,showError,{maximumAge:60000, timeout:10000, enableHighAccuracy:true})
             }
         }
 
