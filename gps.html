@@ -22,19 +22,68 @@
             text-align: center;
             background-color: rgba(0, 0, 0, 0.5);
             font-weight: bold;
-            border-radius: 5px;
             width: 100%;
             position: absolute;
             left: 0;
-            top: 40px;
+            bottom: 0;
             color: #fff;
             z-index: 55;
+        }
+
+        .location {
+            background-color: #303336;
+            cursor: pointer;
+            box-sizing: border-box;
+            position: absolute;
+            z-index: 1;
+            left: 20px;
+            bottom: 30px;
+            height: 32px;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 4px;
+            border: 1px solid #444;
+            color: #edffff;
+        }
+
+        .location svg {
+            width: 100%;
+            margin: 0;
+        }
+
+        .location:hover {
+            color: #FFF;
+            background: #48b;
+            border-color: #aef;
+            box-shadow: 0 0 8px #fff;
+        }
+
+        .location:active {
+            color: #000;
+            background: #48b;
+            border-color: #aef;
+            box-shadow: 0 0 8px #fff;
+        }
+
+        .cesium-viewer-fullscreenContainer {
+            right: 10px;
+            bottom: 30px;
         }
     </style>
 </head>
 
 <body>
     <div id="demo"></div>
+    <div class="location" id="location">
+        <svg t="1724294090231" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+            p-id="6912" xmlns:xlink="http://www.w3.org/1999/xlink" width="22" height="22">
+            <path
+                d="M511.36599 512.177066m-201.557982 0a201.557983 201.557983 0 1 0 403.115965 0 201.557983 201.557983 0 1 0-403.115965 0Z"
+                p-id="6913" fill="currentColor" stroke="currentColor"></path>
+            <path
+                d="M990.163299 477.654949h-78.434431a34.350763 34.350763 0 0 0-5.883154 0.514062c-16.278629-191.288167-168.532358-343.770368-359.706288-360.357433a33.619652 33.619652 0 0 0 0.376979-5.060655V34.270797a34.270797 34.270797 0 0 0-68.541595 0v78.434432a35.059026 35.059026 0 0 0 0.354132 4.923571c-191.790805 15.844532-344.798492 168.372427-361.385558 359.957608a34.556387 34.556387 0 0 0-4.226732-0.274167H34.270797a34.270797 34.270797 0 1 0 0 68.541595h78.445855a32.762882 32.762882 0 0 0 4.12392-0.262743c16.02731 192.076395 169.217774 345.17547 361.328439 361.134239a34.853401 34.853401 0 0 0-0.308437 4.569439v78.434432a34.270797 34.270797 0 0 0 68.541595 0v-78.480126a34.670623 34.670623 0 0 0-0.319861-4.649405c191.368132-16.621337 343.747521-169.377704 359.843372-360.905766a35.001908 35.001908 0 0 0 5.837459 0.502638h78.434431a34.270797 34.270797 0 0 0 34.270798-34.270797 34.270797 34.270797 0 0 0-34.305069-34.270798z m-177.065786 161.940941a328.656946 328.656946 0 1 1 25.703098-127.418824 326.440768 326.440768 0 0 1-25.748792 127.418824z"
+                p-id="6914" fill="currentColor" stroke="currentColor"></path>
+        </svg>
+    </div>
     <div id="cesiumContainer"></div>
     <script type="module">
         // Your access token can be found at: https://ion.cesium.com/tokens.
@@ -45,12 +94,23 @@
         // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
         const viewer = new Cesium.Viewer('cesiumContainer', {
             terrain: Cesium.Terrain.fromWorldTerrain(),
+            animation: false,//隐藏掉时钟
+            timeline: false,//隐藏时间轴
+            fullscreenButton: true,//隐藏全屏按钮
+            geocoder: true,//隐藏搜索按钮
+            homeButton: false,//隐藏home按钮 图中2
+            navigationHelpButton: true,//隐藏帮助按钮
+            sceneModePicker: false,//隐藏切换二三维按钮
+            baseLayerPicker: true,//隐藏切换底图按钮
+            // creditContainer: document.createElement("div"),//隐藏logo
         })
+        // 隐藏logo信息
+        viewer._cesiumWidget._creditContainer.style.display = 'none'
 
 
         // Fly the camera to San Francisco at the given longitude, latitude, and height.
         viewer.camera.flyTo({
-            destination: Cesium.Cartesian3.fromDegrees(120, 30, 300),
+            destination: Cesium.Cartesian3.fromDegrees(120.428318, 31.325119),
             orientation: {
                 heading: Cesium.Math.toRadians(0.0),
                 pitch: Cesium.Math.toRadians(-90.0),
@@ -60,7 +120,10 @@
         // Add Cesium OSM Buildings, a global 3D buildings layer.
         const buildingTileset = await Cesium.createOsmBuildingsAsync()
         viewer.scene.primitives.add(buildingTileset)
+
+
         var x = document.getElementById("demo")
+        var btnLocation = document.getElementById("location")
         getLocation()
         function getLocation () {
             if (navigator.geolocation) {
@@ -78,11 +141,27 @@
             }
         }
 
-        var currentEntity, currentTime = new Date().getTime()
+        var currentEntity, curPos, currentTime = new Date().getTime()
+
+        btnLocation.onclick = function () {
+            if (currentEntity && curPos) {
+                viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(curPos.longitude, curPos.latitude, 300),
+                    orientation: {
+                        heading: Cesium.Math.toRadians(0.0),
+                        pitch: Cesium.Math.toRadians(-90),
+                    },
+                    // maximumHeight:1000,
+                    duration: 0.5
+                })
+            }
+        }
+
+
 
         function showPosition (position) {
-            x.innerHTML = "纬度: " + position.coords.latitude +";经度: " + position.coords.longitude
-
+            x.innerHTML = "纬度: " + position.coords.latitude + ";经度: " + position.coords.longitude
+            curPos = position.coords
             if (currentEntity) {
                 if (new Date().getTime() - currentTime > 1500) {
                     currentTime = new Date().getTime()
@@ -91,7 +170,7 @@
             } else {
                 currentEntity = viewer.entities.add({
                     //标注的坐标 x,y,z 经度纬度和高度的值
-                    position: Cesium.Cartesian3.fromDegrees(120.428318, 31.325119),
+                    position: Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords.latitude),
                     label: {
                         text: '我的位置',
                         //标注文字描述
@@ -120,17 +199,16 @@
                     //标注唯一标识
                     show: true //标绘点对象的true显示,false隐藏属性
                 })
+                viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords.latitude, 300),
+                    orientation: {
+                        heading: Cesium.Math.toRadians(0.0),
+                        pitch: Cesium.Math.toRadians(-90),
+                    },
+                    // maximumHeight:1000,
+                    duration: 0.5
+                })
             }
-
-            viewer.camera.flyTo({
-                destination: Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords.latitude, 300),
-                orientation: {
-                    heading: Cesium.Math.toRadians(0.0),
-                    pitch: Cesium.Math.toRadians(-90),
-                },
-                // maximumHeight:1000,
-                duration: 0.5
-            })
         }
 
         function showError (error) {
