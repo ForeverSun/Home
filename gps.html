@@ -154,6 +154,9 @@
                     // maximumHeight:1000,
                     duration: 0.5
                 })
+            } else {
+                // 获取当前位置
+                navigator.geolocation.getCurrentPosition(showPosition)
             }
         }
 
