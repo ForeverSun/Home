@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>多源定位示例（GPS/北斗/网络/Wi-Fi/IP兜底）</title>
+  <!-- Leaflet 地图样式 -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, PingFang SC, Hiragino Sans GB, Microsoft YaHei, "Helvetica Neue", Arial, "Noto Sans", sans-serif; margin: 0; }
+    header { padding: 16px; position: sticky; top: 0; background: color-mix(in oklab, Canvas 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid color-mix(in oklab, CanvasText 10%, transparent); z-index: 10; }
+    h1 { margin: 0 0 8px; font-size: 18px; }
+    .wrap { padding: 16px; display: grid; gap: 12px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      appearance: none; border: 1px solid color-mix(in oklab, CanvasText 18%, transparent);
+      background: color-mix(in oklab, Canvas 94%, transparent);
+      padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600;
+    }
+    button.primary { background: #2563eb; color: white; border-color: #1d4ed8; }
+    button.danger { background: #ef4444; color: white; border-color: #dc2626; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    #map { height: 48vh; min-height: 300px; border-top: 1px solid color-mix(in oklab, CanvasText 10%, transparent); border-bottom: 1px solid color-mix(in oklab, CanvasText 10%, transparent); }
+    .panel { border: 1px solid color-mix(in oklab, CanvasText 15%, transparent); border-radius: 12px; padding: 12px; }
+    .kv { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 14px; }
+    .hint { color: color-mix(in oklab, CanvasText 55%, transparent); font-size: 13px; }
+    .ok { color: #16a34a; }
+    .warn { color: #d97706; }
+    .err { color: #dc2626; }
+    footer { padding: 16px; font-size: 12px; color: color-mix(in oklab, CanvasText 55%, transparent); }
+    code { padding: 0 4px; border-radius: 6px; background: color-mix(in oklab, CanvasText 8%, transparent); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>获取当前位置信息（GPS/北斗/网络/Wi-Fi）</h1>
+    <div class="hint">
+      说明：网页无法强制指定“只用北斗/只用GPS”，高精度模式通常会使用手机的 GNSS 模块（可能同时用到 GPS/北斗/GLONASS/Galileo）。
+      低功耗模式更倾向于基站/网络/Wi-Fi 定位。下面按钮提供不同策略以便对比效果。
+    </div>
+  </header>
+
+  <div id="map"></div>
+
+  <div class="wrap">
+    <div class="row">
+      <button id="btn-gnss" class="primary">高精度 GNSS（GPS/北斗等）</button>
+      <button id="btn-network">低功耗 网络 / Wi-Fi</button>
+      <button id="btn-watch">持续跟踪（自动）</button>
+      <button id="btn-stop" class="danger" disabled>停止跟踪</button>
+      <button id="btn-ip">IP 定位兜底（不依赖传感器）</button>
+    </div>
+
+    <div class="panel">
+      <div class="kv">
+        <div>定位状态</div><div id="status" class="warn">尚未定位</div>
+        <div>推测来源</div><div id="source">—</div>
+        <div>纬度/经度</div><div id="latlng">—</div>
+        <div>精度(米)</div><div id="acc">—</div>
+        <div>海拔(米)</div><div id="alt">—</div>
+        <div>速度(米/秒)</div><div id="spd">—</div>
+        <div>航向(度)</div><div id="hdg">—</div>
+        <div>时间</div><div id="ts">—</div>
+      </div>
+      <div class="hint" style="margin-top:8px">
+        * “推测来源”基于精度/速度/是否高精度模式等进行启发式判断，仅供参考；浏览器不会公开使用了哪套星座（如是否使用北斗）。
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    小贴士：在 iOS 上，定位必须由用户手势触发（已通过按钮操作满足）；在 HTTPS 或 localhost 下才能调用 <code>navigator.geolocation</code>。
+    若长时间无结果，可尝试切到室外或打开系统定位服务。
+  </footer>
+
+  <!-- Leaflet 脚本 -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    // —— 地图初始化 ——
+    const map = L.map('map', { zoomControl: true }).setView([30.5728, 104.0668], 12); // 默认视图：任意城市
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    let marker = null;
+    let accuracyCircle = null;
+    let watchId = null;
+
+    // —— UI refs ——
+    const $ = (id) => document.getElementById(id);
+    const statusEl = $('status');
+    const sourceEl = $('source');
+    const latlngEl = $('latlng');
+    const accEl = $('acc');
+    const altEl = $('alt');
+    const spdEl = $('spd');
+    const hdgEl = $('hdg');
+    const tsEl = $('ts');
+
+    const btnGnss = $('btn-gnss');
+    const btnNetwork = $('btn-network');
+    const btnWatch = $('btn-watch');
+    const btnStop = $('btn-stop');
+    const btnIp = $('btn-ip');
+
+    // —— 权限检查（可选）——
+    async function checkPermission() {
+      if (!('permissions' in navigator)) return null;
+      try {
+        const res = await navigator.permissions.query({ name: 'geolocation' });
+        return res.state; // 'granted' | 'prompt' | 'denied'
+      } catch (e) { return null; }
+    }
+
+    function formatTs(t) {
+      const dt = new Date(t);
+      return dt.toLocaleString();
+    }
+
+    function setStatus(text, cls = '') {
+      statusEl.className = cls || '';
+      statusEl.textContent = text;
+    }
+
+    // —— 启发式推断定位来源（仅用于展示）——
+    function guessSource(pos, highAccuracyRequested) {
+      const acc = pos.coords.accuracy ?? Infinity; // 估算水平误差（米）
+      const hasAlt = pos.coords.altitude != null && !Number.isNaN(pos.coords.altitude);
+      const spd = pos.coords.speed;
+
+      // 经验阈值：GNSS 往往 < 25m，网络/Wi-Fi 多在 30–1000m
+      if (highAccuracyRequested && acc <= 30) return 'GNSS（可能含 GPS/北斗等融合）';
+      if (acc <= 25) return '很可能 GNSS';
+      if (acc <= 80) return '可能 Wi-Fi/基站 + 传感器融合';
+      return '网络/基站/Wi-Fi 粗定位';
+    }
+
+    function updateMap(lat, lng, accuracy) {
+      if (!marker) {
+        marker = L.marker([lat, lng]).addTo(map);
+      } else {
+        marker.setLatLng([lat, lng]);
+      }
+      if (!accuracyCircle) {
+        accuracyCircle = L.circle([lat, lng], { radius: accuracy }).addTo(map);
+      } else {
+        accuracyCircle.setLatLng([lat, lng]);
+        accuracyCircle.setRadius(accuracy);
+      }
+      // 视野适配：把精度圈纳入视野
+      const bounds = accuracyCircle.getBounds();
+      map.fitBounds(bounds.pad(0.5), { animate: true });
+    }
+
+    function fillInfo(pos, srcText) {
+      const { latitude, longitude, accuracy, altitude, altitudeAccuracy, speed, heading } = pos.coords;
+      latlngEl.textContent = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      accEl.textContent = accuracy != null ? accuracy.toFixed(1) : '—';
+      altEl.textContent = altitude != null ? `${altitude.toFixed(1)}（±${altitudeAccuracy ?? '—'}）` : '—';
+      spdEl.textContent = (speed != null && !Number.isNaN(speed)) ? speed.toFixed(2) : '—';
+      hdgEl.textContent = (heading != null && !Number.isNaN(heading)) ? heading.toFixed(1) : '—';
+      tsEl.textContent = formatTs(pos.timestamp);
+      sourceEl.textContent = srcText;
+      updateMap(latitude, longitude, accuracy ?? 80);
+    }
+
+    function onGeoError(err) {
+      console.error(err);
+      setStatus(`定位失败：${err.message} (code ${err.code})`, 'err');
+    }
+
+    function requestOnce(highAccuracy) {
+      if (!('geolocation' in navigator)) {
+        setStatus('此设备/浏览器不支持 Geolocation API', 'err');
+        return;
+      }
+      setStatus('正在定位…', 'warn');
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const src = guessSource(pos, highAccuracy);
+          setStatus('定位成功', 'ok');
+          fillInfo(pos, src);
+        },
+        onGeoError,
+        {
+          enableHighAccuracy: !!highAccuracy,
+          timeout: highAccuracy ? 20000 : 10000,   // 高精度给更长时间
+          maximumAge: highAccuracy ? 0 : 30000     // 低功耗可接受短期缓存
+        }
+      );
+    }
+
+    function startWatch() {
+      if (!('geolocation' in navigator)) {
+        setStatus('此设备/浏览器不支持 Geolocation API', 'err');
+        return;
+      }
+      if (watchId != null) {
+        setStatus('已在持续跟踪中…', 'ok');
+        return;
+      }
+      setStatus('开始持续跟踪…', 'warn');
+      btnStop.disabled = false;
+      watchId = navigator.geolocation.watchPosition(
+        pos => {
+          const src = guessSource(pos, true);
+          setStatus('跟踪更新', 'ok');
+          fillInfo(pos, src);
+        },
+        err => {
+          onGeoError(err);
+          stopWatch(); // 出错即停止，避免静默循环
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 25000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    function stopWatch() {
+      if (watchId != null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        setStatus('已停止跟踪', 'warn');
+        btnStop.disabled = true;
+      }
+    }
+
+    // —— IP 定位兜底（无需传感器；仅城市级/省级精度）——
+    async function ipFallback() {
+      setStatus('通过 IP 进行粗定位…', 'warn');
+      try {
+        // 任选其一：下面是 ipapi.co 免费接口（有频率限制，生产请换企业服务或自建）
+        const resp = await fetch('https://ipapi.co/json/');
+        const data = await resp.json();
+        if (!data || !data.latitude || !data.longitude) throw new Error('无有效定位数据');
+        const pos = {
+          coords: {
+            latitude: data.latitude,
+            longitude: data.longitude,
+            accuracy: 20000 // 典型城市级精度（估值）
+          },
+          timestamp: Date.now()
+        };
+        setStatus('IP 粗定位成功', 'ok');
+        fillInfo(pos, 'IP 粗定位（城市/区域级）');
+      } catch (e) {
+        onGeoError(e);
+      }
+    }
+
+    // —— 绑定事件 ——
+    btnGnss.addEventListener('click', () => requestOnce(true));
+    btnNetwork.addEventListener('click', () => requestOnce(false));
+    btnWatch.addEventListener('click', startWatch);
+    btnStop.addEventListener('click', stopWatch);
+    btnIp.addEventListener('click', ipFallback);
+
+    // —— 连接类型展示（仅作提示，不影响定位）——
+    (function showConnectionHint() {
+      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      if (conn) {
+        const t = conn.effectiveType || conn.type;
+        const down = conn.downlink;
+        const rtt = conn.rtt;
+        const footer = document.querySelector('footer');
+        const small = document.createElement('div');
+        small.className = 'hint';
+        small.textContent = `网络状态：${t ?? '未知'}，下行≈${down ?? '?'}Mbps，RTT≈${rtt ?? '?'}ms`;
+        footer.appendChild(small);
+      }
+    })();
+
+    // —— 初始权限状态提示（可选）——
+    (async () => {
+      const state = await checkPermission();
+      if (state === 'denied') {
+        setStatus('浏览器已拒绝定位权限，请在系统设置中开启', 'err');
+      } else if (state === 'prompt') {
+        setStatus('待授权：点击上方按钮请求定位', 'warn');
+      } else if (state === 'granted') {
+        setStatus('已授权：可直接定位', 'ok');
+      }
+    })();
+  </script>
+</body>
+</html>
