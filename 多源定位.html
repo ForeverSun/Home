@@ -272,9 +272,9 @@
 
     function fillInfo (pos, srcText) {
       const { latitude, longitude, accuracy, altitude, altitudeAccuracy, speed, heading } = pos.coords;
-      latlngEl.textContent = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      latlngEl.textContent = `${latitude}, ${longitude},`;
       accEl.textContent = accuracy != null ? accuracy.toFixed(1) : '—';
-      altEl.textContent = altitude != null ? `${altitude.toFixed(1)}（±${altitudeAccuracy ?? '—'}）` : '—';
+      altEl.textContent = altitude != null ? `${altitude}（±${altitudeAccuracy ?? '—'}）` : '—';
       spdEl.textContent = (speed != null && !Number.isNaN(speed)) ? speed.toFixed(2) : '—';
       hdgEl.textContent = (heading != null && !Number.isNaN(heading)) ? heading.toFixed(1) : '—';
       tsEl.textContent = formatTs(pos.timestamp);
